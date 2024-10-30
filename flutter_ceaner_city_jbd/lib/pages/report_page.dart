@@ -12,9 +12,36 @@ class ReportPage extends StatelessWidget {
     required this.reportDescription,
   });
 
+  String generateHtml(String reportUrl) {
+    return '''
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body, html {
+              margin: 0;
+              padding: 0;
+              height: 100%;
+              width: 100%;
+              overflow: hidden;
+            }
+            iframe {
+              width: 100%;
+              height: 100%;
+              border: none;
+            }
+          </style>
+        </head>
+        <body>
+          <iframe title="Power BI Report" src="$reportUrl" allowfullscreen="true"></iframe>
+        </body>
+      </html>
+    ''';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Mensaje para verificar la URL
     if (kDebugMode) {
       print("Navegando a: $reportUrl");
     }
@@ -35,28 +62,40 @@ class ReportPage extends StatelessWidget {
           ),
           Expanded(
             child: InAppWebView(
-              initialUrlRequest: URLRequest(
-                url: WebUri(
-                    reportUrl), // Asegúrate de que reportUrl sea un String válido
+              initialData: InAppWebViewInitialData(
+                data: generateHtml(reportUrl),
               ),
               initialOptions: InAppWebViewGroupOptions(
                 crossPlatform: InAppWebViewOptions(
-                  javaScriptEnabled: true, // Habilitar JavaScript
+                  javaScriptEnabled: true,
+                  useOnLoadResource: true,
+                  cacheEnabled: true, // Asegúrate de que esté habilitado
+                  mediaPlaybackRequiresUserGesture:
+                      false, // Permitir reproducción automática
                 ),
               ),
+              onWebViewCreated: (controller) {
+                // Guarda el controlador si lo necesitas
+              },
               onLoadStart: (controller, url) {
                 if (kDebugMode) {
                   print("Cargando el informe...");
                 }
               },
-              onLoadStop: (controller, url) {
+              onLoadStop: (controller, url) async {
                 if (kDebugMode) {
-                  print("Informe cargado correctamente: $url");
+                  print("Informe cargado correctamente.");
                 }
               },
               onLoadError: (controller, url, code, message) {
                 if (kDebugMode) {
                   print("Error al cargar el informe: $code - $message");
+                }
+              },
+              onLoadHttpError: (controller, url, statusCode, description) {
+                if (kDebugMode) {
+                  print(
+                      "Error HTTP al cargar el informe: $statusCode - $description");
                 }
               },
             ),
